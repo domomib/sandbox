@@ -49,6 +49,7 @@ sp.on("open", function() {
 
 			case '3': // internal
 				chaine += ' => ' + internal[donnees[4]];
+				// Ajouter proprement une gestion des  nodes avec persistances
 				if ( donnees[4] == 3 ){
 					//nodeId++; 
 					var resp = donnees.slice(0,4).concat(4, nodeId, '\n');
