@@ -1,0 +1,16 @@
+Google fonts :
+ html: <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+ css : font-family: 'Open Sans', sans-serif;
+ 
+Code couleur:
+  A définir
+  
+Icône :
+  Thermomètre
+  Ampoule allumée/éteinte
+  Capteur pluie
+  Porte ou cadenas ouvert/fermé
+  Anémomètre
+  Humidité
+  Pluviomètre
+  Capteur niveau
