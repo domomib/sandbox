@@ -3,6 +3,9 @@ var serialport = require('serialport');
 var SerialPort = serialport.SerialPort;
 */
 var SerialPort = require("serialport");
+const debug = require('debug')('serialGateway')  
+const name = 'serialGateway'  
+debug('booting %s', name)  
 
 const presentation = ['S_DOOR', 'S_MOTION', 'S_SMOKE', 'S_LIGHT-S_BINARY', 'S_DIMMER', 'S_COVER', 'S_TEMP', 'S_HUM', 'S_BARO', 'S_WIND', 'S_RAIN',
  	'S_UV', 'S_WEIGHT', 'S_POWER', 'S_HEATER', 'S_DISTANCE', 'S_LIGHT_LEVEL', 'S_ARDUINO_NODE', 'S_ARDUINO_REPEATER_NODE', 'S_LOCK', 'S_IR', 
@@ -29,6 +32,7 @@ var sp = new SerialPort("/dev/tty.usbmodemFD111", {
 var nodeId = 1;
 sp.on("open", function() {
 	sp.on('data', function(data, callback) {
+		debug(data);
 		// data = node-id;child-sensor-id;message-type;ack;sub-type;payload
 		var donnees = data.split(';');	
 
