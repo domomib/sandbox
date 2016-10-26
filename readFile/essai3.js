@@ -1,46 +1,12 @@
-
+var RSVP = require('rsvp');
 var fs = require('fs');
-var sqlite3 = require('sqlite3');
+var sqlite3 = require("sqlite3").verbose();
 
-
-db = new sqlite3.Database('./jobsEvents.db');
-
-
-// Database initialization
-db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='jobevents'",
-	function(err, rows) {
-	 	if (err !== null) {
-	    	console.log(err);
-	  	}
-	  	else if(rows === undefined) {
-	    	db.run(	'CREATE TABLE "jobs" ' +
-	           	'("id" INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-	           	'"string" VARCHAR(10), ' +
-	           	'"server" VARCHAR(7), ' +
-	           	'"package" VARCHAR(100), ' +
-	           	'"version" VARCHAR(10), ' +
-	           	'"procedure" VARCHAR(50), ' +
-	           	'"status" VARCHAR(7), ' +
-				'"task" VARSCHAR(10), ' +
-				'"activation" VARCHAR(19))'
-	           , function(err) {
-	      			if(err !== null) {
-	        			console.log(err);
-	     			}
-	      			else {
-	        			console.log("SQL Table 'jobs' initialized.");
-	      			}
-	    		}		
-	    	);
-	  	}
-	  	else {
-	    	console.log("SQL Table 'jobs' already initialized.");
-	  	}
-	}
-);
-
-
-var convert = function(index){
+// Add debug function 
+var log = require('debug')('toto:log')
+var info = require('debug')('toto:info')
+var errorLog = require('debug')('toto:errorLog')
+/*var convert = function(index){
 	var value = "";
 	switch (index) {
 		case 0:
@@ -69,42 +35,99 @@ var convert = function(index){
 			break;
 	}
 	return value;
-};
+};*/
 
-var taille = new Map();
-for (var i=0; i< 8; i++){
-	taille.set(convert(i), 0);
-};
+// Manage database
+let dbFile = "./jobsEvents.db"
+var isDBExists = fs.existsSync(dbFile);
 
+if(!isDBExists) {
+  console.log("Creating DB file.");
+  fs.openSync(dbFile, "w");
+}
+var db = new sqlite3.Database(dbFile);
+
+var convertInt = function(int){
+	var a = String(parseInt(int));
+	if (int < 10){
+		a = '0' + a;
+	}
+	return a;
+}
+// Read folder data jobs inventories 
 var folder ='data';
-		fs.readdir(folder, function(err, files){
-			console.log(files);
-			for (let afile of files){
+
+var readJobsInventories = new RSVP.Promise(function (resolve, reject){
+	var data = [];
+	fs.readdir(folder, function(err, files){
+		for (var afile of files){
+			if (afile.search('Software_Jobs_By') !== -1) {
+
 				var result = afile.match(/_(\d\d)(\d\d)(\d\d)_/);
-				var date = result[2] +'/' + String(parseInt(result[3]) - 1) + '/20' + result[1];
-				console.log(date);
+				var date = result[2] +'/' + convertInt(result[3] - 1) + '/20' + result[1];
+
+				log("Read file "+ afile + "   for date: "+ date);
 
 				var lineReader = require('readline').createInterface({
-				 	input: fs.createReadStream('data/' + afile)
+				 	input: fs.createReadStream(folder+'/' + afile)
 				});
 
 				lineReader.on('line', function (line) {
+
 					if (line.search(date) != -1){
-						var item = line.split(',')
-						for (var i=0; i< 8; i++){
-							var element = convert(i);
-							taille.set(element, Math.max(taille.get(element), item[i].length))
-							sqlrequest = "INSERT INTO 'jobs' (string, server, package, version, procedure, status, tack, activation) " +
-									"VALUES ('STE40', item[1], item[2], item[3], item[4], item[5], item[6], item[7])" 
-						}
-			  		}
+						console.log(line);
+						var item = line.split(',');
+						var elems = item[0].split('.'); 
+						var time = item[7].split(' ');
+						data.push({'filename':afile, 'string':elems[1], 'server':elems[0], 'package':item[2], 'version':item[3], 'procedure':item[4], 'status':item[5], 'tack':item[6], 'date':time[0], 'time':time[1] });
+					}
 				});
 
 				lineReader.on('close', function(){
-					console.log(taille);
+					log("List data provide to database");
+					log(data);
+					resolve(data);
 				});
-			};
-		});
+			}
+		}
+	});
+});
+
+
+var updateDatabase = function(values){
+	log("Updating database in progress....");
+	db.serialize(function () {
+		if (!isDBExists) {
+		 	db.run("CREATE TABLE jobs (string, server, package, version, procedure, status, tack, date, time, filename)");
+		 }
+
+		 var stmt = db.prepare("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?)");  
+		 for (let items of values) {
+		 	stmt.run(items['string'], items['server'], items['package'], items['version'], items['procedure'], items['status'], items['tack'], items['date'], items['time'], items['filename']);
+		 }
+		 stmt.finalize();
+  
+		db.each("SELECT * FROM jobs", function (err, row) {
+	    	if (err ===null){
+	    		log(row);
+	    	}
+	    	else {
+	    		log("no data found")
+	    	}
+	  	});
+	  	log("Database updated!");
+
+	});
+	//db.close();
 	
+};
 
+readJobsInventories.then(function(values){
+	log("readJobsInventories successfully executed")
+	//info(values);
+	log("update database");
+	updateDatabase(values);
 
+}).catch(function(error){
+	error("Error during readJobsInventories")
+});

@@ -1,0 +1,9 @@
+{
+  "name": "essai",
+  "version": "0.0.1",
+  "dependencies": {
+    "debug": "^2.2.0",
+    "rsvp": "^3.3.3",
+    "sqlite3": "^3.1.6"
+  }
+}
