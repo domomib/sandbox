@@ -44,7 +44,7 @@ var readJobsInventories = new RSVP.Promise(function (resolve, reject){
 				// Line read Event
 				lineReader.on('line', function (line) {
 					if (line.search(date) != -1){
-						info('date found');
+						info('date found: ' + date);
 						var items = line.split(',');
 						var elems = items[0].split('.'); 
 						var time = items[7].split(' ');
